@@ -1,0 +1,42 @@
+# Build results
+bin/
+obj/
+
+# User-specific files
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Visual Studio temp files
+.vs/
+
+# Resharper
+*_ReSharper*/
+
+# Debug files
+*.pdb
+
+# Application settings that might contain secrets
+appsettings.json
+appsettings.*.json
+
+# WebView2 cache and user data
+*.WebView2/
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Claude local settings
+.claude/

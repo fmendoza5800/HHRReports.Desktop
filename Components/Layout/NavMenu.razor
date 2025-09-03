@@ -1,0 +1,39 @@
+﻿<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="">
+            <span class="bi bi-bar-chart-fill" aria-hidden="true"></span>
+            <span class="brand-text">HHRReports</span>
+        </a>
+    </div>
+</div>
+
+<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+
+<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
+    <nav class="flex-column">
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> <span>Home</span>
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="pool-details">
+                <span class="bi bi-graph-up" aria-hidden="true"></span> <span>Pool Details</span>
+            </NavLink>
+        </div>
+        
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="terminal-details">
+                <span class="bi bi-terminal" aria-hidden="true"></span> <span>Terminal Details</span>
+            </NavLink>
+        </div>
+        
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="performance-report">
+                <span class="bi bi-speedometer2" aria-hidden="true"></span> <span>Performance Report</span>
+            </NavLink>
+        </div>
+    </nav>
+</div>
+

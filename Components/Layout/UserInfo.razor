@@ -1,0 +1,81 @@
+@using HHRReports.Desktop.Services
+@implements IDisposable
+@inject IDesktopAuthenticationService AuthService
+@inject NavigationManager Navigation
+
+@if (isAuthenticated)
+{
+    <div class="d-flex align-items-center">
+        <div class="me-3">
+            <small class="text-muted">
+                <i class="fas fa-user me-1"></i>
+                Welcome, @username
+            </small>
+            <br>
+            <small class="text-muted">
+                <i class="fas fa-clock me-1"></i>
+                Active: @GetSessionDuration()
+            </small>
+        </div>
+        <a @onclick="Logout" class="btn btn-outline-secondary btn-sm" style="cursor: pointer;" title="Sign Out">
+            <i class="fas fa-sign-out-alt me-1"></i>
+            Sign Out
+        </a>
+    </div>
+}
+
+@code {
+    private bool isAuthenticated = false;
+    private string? username;
+    private DateTime loginTime;
+    private System.Threading.Timer? _timer;
+
+    protected override void OnInitialized()
+    {
+        CheckAuthState();
+        
+        // Update session duration every second
+        _timer = new System.Threading.Timer(_ =>
+        {
+            InvokeAsync(() =>
+            {
+                CheckAuthState();
+                StateHasChanged();
+            });
+        }, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+    }
+
+    private void CheckAuthState()
+    {
+        isAuthenticated = AuthService.IsAuthenticated;
+        if (isAuthenticated)
+        {
+            username = AuthService.Username;
+            loginTime = AuthService.LoginTime;
+        }
+    }
+
+    public void Dispose()
+    {
+        _timer?.Dispose();
+    }
+
+    private void Logout()
+    {
+        AuthService.Logout();
+        Navigation.NavigateTo("/login", forceLoad: false);
+    }
+
+    private string GetSessionDuration()
+    {
+        if (!isAuthenticated) return "Unknown";
+        
+        var duration = DateTime.UtcNow - loginTime;
+        if (duration.TotalMinutes < 1)
+            return "Just now";
+        else if (duration.TotalHours < 1)
+            return $"{(int)duration.TotalMinutes}m";
+        else
+            return $"{(int)duration.TotalHours}h {(int)(duration.TotalMinutes % 60)}m";
+    }
+}
