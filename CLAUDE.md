@@ -118,3 +118,4 @@ Services are registered in `Program.cs` using dependency injection:
 - **ADO.NET**: Used for Terminal Details service to safely handle missing or optional database columns
 - **Excel Export**: Uses EPPlus with proper formatting (currency, dates, percentages) and auto-fit columns
 - **Percentage Formatting**: Use ToString("N2")% format instead of ToString("P2") to avoid multiplication by 100
+- remember that we have 2 version of this report. cloud and destop. they should look the same and function the same.
