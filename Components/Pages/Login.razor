@@ -1,60 +1,87 @@
 @page "/login"
+@using HHRReports.Desktop.Models
 @using HHRReports.Desktop.Services
 @inject IDesktopAuthenticationService AuthService
 @inject NavigationManager Navigation
 @inject ILogger<Login> Logger
+@inject IJSRuntime JSRuntime
 
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h3>HHR Reports - Database Login</h3>
+<PageTitle>HHR Reports - Login</PageTitle>
+
+<div class="container-fluid vh-100 d-flex align-items-center justify-content-center">
+    <div class="row w-100">
+        <div class="col-md-6 col-lg-4 mx-auto">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-primary text-white text-center py-4">
+                    <h3 class="mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>
+                        HHR Reports
+                    </h3>
+                    <p class="mb-0 opacity-75">Pool Details Reporting System</p>
                 </div>
-                <div class="card-body">
-                    @if (!string.IsNullOrEmpty(errorMessage))
+                
+                <div class="card-body p-4">
+                    @if (showError && !string.IsNullOrEmpty(errorMessage))
                     {
-                        <div class="alert alert-danger" role="alert">
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
                             @errorMessage
+                            <button type="button" class="btn-close" @onclick="() => showError = false"></button>
                         </div>
                     }
                     
-                    <EditForm Model="@loginModel" OnValidSubmit="HandleLogin">
-                        <DataAnnotationsValidator />
-                        <ValidationSummary />
-                        
+                    <div>
                         <div class="mb-3">
-                            <label for="server" class="form-label">SQL Server</label>
-                            <input id="server" class="form-control" @bind="loginModel.Server" placeholder="e.g., hhr-sql.database.windows.net" />
+                            <label for="username" class="form-label">
+                                <i class="fas fa-user me-1"></i>
+                                Username
+                            </label>
+                            <input type="text" id="username" class="form-control" @bind="loginModel.Username" 
+                                   placeholder="Enter your database username" autofocus />
                         </div>
-                        
-                        <div class="mb-3">
-                            <label for="database" class="form-label">Database</label>
-                            <input id="database" class="form-control" @bind="loginModel.Database" placeholder="e.g., HHRPoolData" />
+
+                        <div class="mb-4">
+                            <label for="password" class="form-label">
+                                <i class="fas fa-lock me-1"></i>
+                                Password
+                            </label>
+                            <div class="input-group">
+                                <input type="@(showPassword ? "text" : "password")" id="password" 
+                                       class="form-control" @bind="loginModel.Password" 
+                                       placeholder="Enter your database password" />
+                                <button class="btn btn-outline-secondary" type="button" 
+                                        @onclick="TogglePasswordVisibility">
+                                    <i class="fas @(showPassword ? "fa-eye-slash" : "fa-eye")"></i>
+                                </button>
+                            </div>
                         </div>
-                        
-                        <div class="mb-3">
-                            <label for="username" class="form-label">Username</label>
-                            <input id="username" class="form-control" @bind="loginModel.Username" />
+
+                        <div class="d-grid gap-2">
+                            <button type="button" class="btn btn-primary btn-lg" disabled="@isLoading" @onclick="HandleLogin">
+                                @if (isLoading)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                    <span>Connecting...</span>
+                                }
+                                else
+                                {
+                                    <i class="fas fa-sign-in-alt me-2"></i>
+                                    <span>Sign In</span>
+                                }
+                            </button>
                         </div>
-                        
-                        <div class="mb-3">
-                            <label for="password" class="form-label">Password</label>
-                            <input id="password" type="password" class="form-control" @bind="loginModel.Password" />
-                        </div>
-                        
-                        <button type="submit" class="btn btn-primary w-100" disabled="@isLoading">
-                            @if (isLoading)
-                            {
-                                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                <span>Connecting...</span>
-                            }
-                            else
-                            {
-                                <span>Login</span>
-                            }
-                        </button>
-                    </EditForm>
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <div class="text-center">
+                        <small class="text-muted">
+                            <i class="fas fa-shield-alt me-1"></i>
+                            Your credentials are encrypted and never stored permanently.
+                            <br />
+                            Session expires after 8 hours of inactivity.
+                        </small>
+                    </div>
                 </div>
             </div>
         </div>
@@ -62,47 +89,59 @@
 </div>
 
 @code {
-    private LoginModel loginModel = new LoginModel();
+    private LoginModel loginModel = new()
+    {
+        Server = "tcp:hhr-sql.database.windows.net,1433",
+        Database = "HHRPoolData",
+        Username = "",
+        Password = ""
+    };
+    
     private bool isLoading = false;
-    private string? errorMessage;
+    private bool showError = false;
+    private string errorMessage = string.Empty;
+    private bool showPassword = false;
 
     protected override void OnInitialized()
     {
-        // Set default values - can be loaded from config
-        loginModel.Server = "hhr-sql.database.windows.net";
-        loginModel.Database = "HHRPoolData";
+        // Check if user is already authenticated
+        if (AuthService.IsAuthenticated)
+        {
+            Navigation.NavigateTo("/pool-details");
+        }
     }
 
     private async Task HandleLogin()
     {
-        isLoading = true;
-        errorMessage = null;
-        StateHasChanged();
-
         try
         {
-            Logger.LogInformation("Attempting login for user: {Username}", loginModel.Username);
+            Logger.LogInformation("HandleLogin button clicked!");
             
-            var success = await AuthService.LoginAsync(
-                loginModel.Username!, 
-                loginModel.Password!, 
-                loginModel.Server!, 
-                loginModel.Database!);
+            isLoading = true;
+            showError = false;
+            StateHasChanged();
+
+            Logger.LogInformation("Attempting login for user: {Username}", loginModel.Username);
+
+            var success = await AuthService.LoginAsync(loginModel.Username, loginModel.Password, loginModel.Server, loginModel.Database);
 
             if (success)
             {
-                Logger.LogInformation("Login successful, navigating to home");
-                Navigation.NavigateTo("/");
+                Logger.LogInformation("Login successful, redirecting to pool details");
+                Navigation.NavigateTo("/pool-details");
             }
             else
             {
-                errorMessage = "Login failed. Please check your credentials and permissions.";
+                showError = true;
+                errorMessage = "Login failed. Please check your credentials and try again.";
+                Logger.LogWarning("Login failed for user: {Username}", loginModel.Username);
             }
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Login error");
-            errorMessage = $"Connection failed: {ex.Message}";
+            Logger.LogError(ex, "Unexpected error during login for user: {Username}", loginModel.Username);
+            showError = true;
+            errorMessage = "An unexpected error occurred. Please try again.";
         }
         finally
         {
@@ -111,18 +150,16 @@
         }
     }
 
+    private void TogglePasswordVisibility()
+    {
+        showPassword = !showPassword;
+    }
+
     public class LoginModel
     {
-        [Required]
-        public string? Server { get; set; }
-        
-        [Required]
-        public string? Database { get; set; }
-        
-        [Required]
-        public string? Username { get; set; }
-        
-        [Required]
-        public string? Password { get; set; }
+        public string Server { get; set; } = "";
+        public string Database { get; set; } = "";
+        public string Username { get; set; } = "";
+        public string Password { get; set; } = "";
     }
 }

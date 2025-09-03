@@ -1,57 +1,18 @@
 @page "/"
 @using HHRReports.Desktop.Services
 @inject IDesktopAuthenticationService AuthService
+@inject NavigationManager Navigation
 
-<PageTitle>Home - HHR Reports Desktop</PageTitle>
-
-<div class="container-fluid">
-    <h1>Welcome to HHR Reports Desktop</h1>
-    
-    @if (AuthService.IsAuthenticated)
+@code {
+    protected override void OnInitialized()
     {
-        <div class="alert alert-success mt-3">
-            <h4 class="alert-heading">Connected Successfully!</h4>
-            <p>You are logged in as: <strong>@AuthService.CurrentSession?.Username</strong></p>
-            <p>Connected to: <strong>@AuthService.CurrentSession?.ConnectionString?.Split(';').FirstOrDefault(x => x.StartsWith("Data Source"))?.Replace("Data Source=", "")</strong></p>
-            <hr>
-            <p class="mb-0">Select a report from the navigation menu to begin.</p>
-        </div>
-
-        <div class="row mt-4">
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">Pool Details Report</h5>
-                        <p class="card-text">View detailed pool performance metrics for a 30-day period.</p>
-                        <a href="/pool-details" class="btn btn-primary">View Report</a>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">Terminal Details Report</h5>
-                        <p class="card-text">Analyze terminal-level activity and performance data.</p>
-                        <a href="/terminal-details" class="btn btn-primary">View Report</a>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">Performance Report</h5>
-                        <p class="card-text">Comprehensive performance metrics with revenue analysis.</p>
-                        <a href="/performance-report" class="btn btn-primary">View Report</a>
-                    </div>
-                </div>
-            </div>
-        </div>
+        if (AuthService.IsAuthenticated)
+        {
+            Navigation.NavigateTo("/pool-details");
+        }
+        else
+        {
+            Navigation.NavigateTo("/login");
+        }
     }
-    else
-    {
-        <div class="alert alert-warning mt-3">
-            <h4 class="alert-heading">Not Connected</h4>
-            <p>Please log in to access reports.</p>
-        </div>
-    }
-</div>
+}
