@@ -1,0 +1,530 @@
+@page "/terminal-details"
+@using HHRReports.Desktop.Models
+@using HHRReports.Desktop.Services
+@using Microsoft.JSInterop
+@using Microsoft.Data.SqlClient
+@using OfficeOpenXml
+@using OfficeOpenXml.Style
+@using System.Drawing
+@implements IDisposable
+@inject ITerminalDetailService TerminalService
+@inject ILogger<TerminalDetails> Logger
+@inject IJSRuntime JSRuntime
+@inject NavigationManager Navigation
+
+<link href="css/terminal-details.css" rel="stylesheet" />
+<link href="css/timer.css" rel="stylesheet" />
+
+<PageTitle>Terminal Details Report</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>Terminal Details Report</h3>
+    <div class="theme-selector">
+        <label for="themeSelect" class="me-2">Theme:</label>
+        <select id="themeSelect" class="form-select form-select-sm d-inline-block" style="width: auto;" value="@currentTheme" @onchange="OnThemeChanged">
+            <option value="white">White</option>
+            <option value="grey">Grey</option>
+            <option value="black">Black</option>
+        </select>
+    </div>
+</div>
+
+<div class="container-fluid p-0 @($"theme-{currentTheme}")">
+    <div class="row mb-3 align-items-end">
+        <div class="col-auto">
+            <label for="endDate" class="form-label mb-1">Date:</label>
+            <input type="date" class="form-control" id="endDate" @bind="endDate" style="width: auto;">
+        </div>
+        <div class="col-auto">
+            <div class="btn-group">
+                <button class="btn btn-primary" @onclick="LoadReport" disabled="@loading">
+                    @if (loading)
+                    {
+                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                        <span class="ms-2">Loading...</span>
+                    }
+                    else
+                    {
+                        <span>Generate Report</span>
+                    }
+                </button>
+                @if (loading)
+                {
+                    <button class="btn btn-danger" @onclick="CancelLoad">
+                        <span>Cancel</span>
+                    </button>
+                }
+                @if (terminalDetails != null && terminalDetails.Any() && !loading)
+                {
+                    <button class="btn btn-success" @onclick="ExportToExcel" disabled="@exportingToExcel">
+                        @if (exportingToExcel)
+                        {
+                            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                            <span class="ms-2">Exporting...</span>
+                        }
+                        else
+                        {
+                            <span>Export to Excel</span>
+                        }
+                    </button>
+                }
+            </div>
+        </div>
+        <div class="col">
+            @if (terminalDetails != null && terminalDetails.Any())
+            {
+                <div class="text-end">
+                    <span class="badge bg-info text-dark fs-6">Found @terminalDetails.Count records</span>
+                    <span class="badge bg-secondary fs-6 ms-2">Date Range: @terminalDetails.Min(p => p.StartDate).ToString("MM/dd/yyyy") - @terminalDetails.Max(p => p.StartDate).ToString("MM/dd/yyyy")</span>
+                </div>
+            }
+        </div>
+    </div>
+
+    @if (loading)
+    {
+        <div class="row mt-4">
+            <div class="col">
+                <div class="progress">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                         role="progressbar" 
+                         style="width: 100%">
+                        Loading Data...
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (exportingToExcel)
+    {
+        <div class="row mt-3">
+            <div class="col">
+                <div class="alert alert-info d-flex align-items-center" role="alert">
+                    <div class="spinner-border text-info me-3" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <div>
+                        <strong>Exporting to Excel...</strong><br />
+                        <small>This may take a moment for large datasets. Please wait...</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="row mt-4">
+            <div class="col">
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <strong>Error:</strong> @errorMessage
+                    <button type="button" class="btn-close" @onclick="@(() => errorMessage = null)"></button>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (terminalDetails != null && terminalDetails.Any())
+    {
+        <div class="row mt-4">
+            <div class="col">
+                <div class="table-responsive">
+                    <table class="table table-striped table-bordered table-sm">
+                        <thead>
+                            <tr>
+                                <th>Site ID</th>
+                                <th>Site Name</th>
+                                <th>Date</th>
+                                <th>Game Description</th>
+                                <th>Pool</th>
+                                <th>Device</th>
+                                <th>Denom</th>
+                                <th>Cash In</th>
+                                <th>Ticket In</th>
+                                <th>Ticket Out</th>
+                                <th>Canceled Credit</th>
+                                <th>Hand Pay Wins</th>
+                                <th>Total Money Cashed Out</th>
+                                <th>GT Balance</th>
+                                <th>Total Money In</th>
+                                <th>Total Money Out</th>
+                                <th>Balance</th>
+                                <th>Played</th>
+                                <th>Total Money Won</th>
+                                <th>Non-Cash In</th>
+                                <th>Non-Cash Out</th>
+                                <th>Hold</th>
+                                <th>Wagered</th>
+                                <th>Total Won</th>
+                                <th>Total Commission</th>
+                                <th>Terminal Commission</th>
+                                <th>Asset Number</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var detail in terminalDetails)
+                            {
+                                <tr>
+                                    <td>@detail.SiteID</td>
+                                    <td>@detail.SiteName</td>
+                                    <td>@detail.StartDate.ToShortDateString()</td>
+                                    <td>@detail.strGameDescription</td>
+                                    <td>@detail.Pool</td>
+                                    <td>@detail.Device</td>
+                                    <td>@detail.iDenom</td>
+                                    <td>@detail.CashIn.ToString("C")</td>
+                                    <td>@detail.TicketIn.ToString("C")</td>
+                                    <td>@detail.TicketOut.ToString("C")</td>
+                                    <td>@detail.CanceledCredit.ToString("C")</td>
+                                    <td>@detail.HandPayWins.ToString("C")</td>
+                                    <td>@detail.TotalMoneyCashedOut.ToString("C")</td>
+                                    <td>@detail.GTBalance.ToString("C")</td>
+                                    <td>@detail.TotalMoneyIn.ToString("C")</td>
+                                    <td>@detail.TotalMoneyOut.ToString("C")</td>
+                                    <td>@detail.Balance.ToString("C")</td>
+                                    <td>@detail.Played.ToString("C")</td>
+                                    <td>@detail.TotalMoneyWon.ToString("C")</td>
+                                    <td>@detail.iNonCashIn.ToString("C")</td>
+                                    <td>@detail.iNonCashOut.ToString("C")</td>
+                                    <td>@detail.Hold.ToString("C")</td>
+                                    <td>@detail.Wagered.ToString("C")</td>
+                                    <td>@detail.TotalWon.ToString("C")</td>
+                                    <td>@detail.TotalCommission.ToString("C")</td>
+                                    <td>@detail.TerminalCommission.ToString("C")</td>
+                                    <td>@detail.AssetNumber</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+    
+    @if (showTimer)
+    {
+        <div class="timer-container">
+            @if (loading)
+            {
+                <div class="spinner"></div>
+                <span class="timer-label">Executing:</span>
+            }
+            else
+            {
+                <span class="timer-label">@timerStatus</span>
+            }
+            <span class="timer-value">@elapsedTime</span>
+        </div>
+    }
+</div>
+
+@code {
+    private DateTime endDate = DateTime.Today;
+    private List<TerminalDetail>? terminalDetails;
+    private bool loading = false;
+    private string? errorMessage;
+    private string currentTheme = "white";
+    private bool exportingToExcel = false;
+
+    private CancellationTokenSource? _cancellationTokenSource;
+    private string? authToken;
+    
+    // Timer variables
+    private bool showTimer = false;
+    private string elapsedTime = "00:00:00";
+    private string timerStatus = "Completed:";
+    private System.Timers.Timer? executionTimer;
+    private DateTime reportStartTime;
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await ApplyTheme();
+        }
+        
+        // Always get the current auth token before operations (in case it changed)
+        try
+        {
+            authToken = await JSRuntime.InvokeAsync<string?>("authHelpers.getCookie", "AuthToken");
+            if (!string.IsNullOrEmpty(authToken))
+            {
+                Logger.LogDebug("Auth token retrieved from cookie for SignalR usage: {Token}", authToken);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogDebug("Could not get auth token: {Message}", ex.Message);
+        }
+    }
+
+    private async Task ApplyTheme()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("applyTheme", currentTheme);
+        }
+        catch
+        {
+            // Theme application failed, continue without theme
+        }
+    }
+
+    private async Task OnThemeChanged(ChangeEventArgs e)
+    {
+        currentTheme = e.Value?.ToString() ?? "white";
+        await ApplyTheme();
+    }
+
+    private void CancelLoad()
+    {
+        _cancellationTokenSource?.Cancel();
+    }
+
+    private async Task LoadReport()
+    {
+        errorMessage = null;
+        loading = true;
+        showTimer = true;
+        reportStartTime = DateTime.Now;
+        StartTimer();
+        _cancellationTokenSource = new CancellationTokenSource();
+
+        try
+        {
+            // Get fresh auth token for each report generation
+            try
+            {
+                authToken = await JSRuntime.InvokeAsync<string?>("authHelpers.getCookie", "AuthToken");
+                Logger.LogDebug("Fresh auth token retrieved for report generation: {Token}", authToken);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogDebug("Could not get auth token: {Message}", ex.Message);
+            }
+
+            // Pass auth token for SignalR requests
+            if (!string.IsNullOrEmpty(authToken))
+            {
+                try
+                {
+                    terminalDetails = await TerminalService.GetTerminalDetailsAsync(endDate, authToken, _cancellationTokenSource.Token);
+                    timerStatus = "Completed:";
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    // Token is stale, clear it and redirect to login
+                    Logger.LogWarning("Auth token is stale, clearing and redirecting to login");
+                    await JSRuntime.InvokeVoidAsync("authHelpers.deleteCookie", "AuthToken");
+                    Navigation.NavigateTo("/login", forceLoad: true);
+                    return;
+                }
+            }
+            else
+            {
+                terminalDetails = await TerminalService.GetTerminalDetailsAsync(endDate, _cancellationTokenSource.Token);
+                timerStatus = "Completed:";
+            }
+            
+            if (terminalDetails == null || !terminalDetails.Any())
+            {
+                errorMessage = "No data found for the selected date range.";
+                Logger.LogWarning("No data returned from the stored procedure");
+            }
+            else
+            {
+                Logger.LogInformation($"Successfully retrieved {terminalDetails.Count} records");
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            errorMessage = "Report generation was cancelled.";
+            timerStatus = "Cancelled:";
+        }
+        catch (SqlException ex) when (ex.Number == -2)
+        {
+            errorMessage = "The report is taking longer than expected. Please try again or contact support if the issue persists.";
+            Logger.LogError(ex, "Timeout occurred while generating report");
+            timerStatus = "Timeout:";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "An error occurred while generating the report. Please try again or contact support if the issue persists.";
+            Logger.LogError(ex, "Error occurred while generating report");
+            timerStatus = "Failed:";
+        }
+        finally
+        {
+            loading = false;
+            StopTimer();
+            // Keep showTimer as true to show the final time
+            _cancellationTokenSource?.Dispose();
+            _cancellationTokenSource = null;
+        }
+    }
+    
+    private void StartTimer()
+    {
+        executionTimer?.Dispose();
+        executionTimer = new System.Timers.Timer(100); // Update every 100ms
+        executionTimer.Elapsed += (sender, e) =>
+        {
+            var elapsed = DateTime.Now - reportStartTime;
+            elapsedTime = $"{elapsed.Hours:00}:{elapsed.Minutes:00}:{elapsed.Seconds:00}";
+            InvokeAsync(StateHasChanged);
+        };
+        executionTimer.Start();
+    }
+    
+    private void StopTimer()
+    {
+        executionTimer?.Stop();
+        executionTimer?.Dispose();
+        executionTimer = null;
+    }
+
+    private async Task ExportToExcel()
+    {
+        try
+        {
+            if (terminalDetails == null || !terminalDetails.Any())
+                return;
+
+            exportingToExcel = true;
+            StateHasChanged(); // Update UI to show loading state
+            
+            // Add a small delay to ensure UI updates
+            await Task.Delay(100);
+
+            using (var package = new ExcelPackage())
+            {
+                var worksheet = package.Workbook.Worksheets.Add("Terminal Details");
+
+                // Add headers
+                worksheet.Cells[1, 1].Value = "Site ID";
+                worksheet.Cells[1, 2].Value = "Site Name";
+                worksheet.Cells[1, 3].Value = "Date";
+                worksheet.Cells[1, 4].Value = "Game Description";
+                worksheet.Cells[1, 5].Value = "Pool";
+                worksheet.Cells[1, 6].Value = "Device";
+                worksheet.Cells[1, 7].Value = "Denom";
+                worksheet.Cells[1, 8].Value = "Cash In";
+                worksheet.Cells[1, 9].Value = "Ticket In";
+                worksheet.Cells[1, 10].Value = "Ticket Out";
+                worksheet.Cells[1, 11].Value = "Canceled Credit";
+                worksheet.Cells[1, 12].Value = "Hand Pay Wins";
+                worksheet.Cells[1, 13].Value = "Total Money Cashed Out";
+                worksheet.Cells[1, 14].Value = "GT Balance";
+                worksheet.Cells[1, 15].Value = "Total Money In";
+                worksheet.Cells[1, 16].Value = "Total Money Out";
+                worksheet.Cells[1, 17].Value = "Balance";
+                worksheet.Cells[1, 18].Value = "Played";
+                worksheet.Cells[1, 19].Value = "Total Money Won";
+                worksheet.Cells[1, 20].Value = "Non-Cash In";
+                worksheet.Cells[1, 21].Value = "Non-Cash Out";
+                worksheet.Cells[1, 22].Value = "Hold";
+                worksheet.Cells[1, 23].Value = "Wagered";
+                worksheet.Cells[1, 24].Value = "Total Won";
+                worksheet.Cells[1, 25].Value = "Total Commission";
+                worksheet.Cells[1, 26].Value = "Terminal Commission";
+                worksheet.Cells[1, 27].Value = "Asset Number";
+
+                // Format headers
+                using (var range = worksheet.Cells[1, 1, 1, 27])
+                {
+                    range.Style.Font.Bold = true;
+                    range.Style.Fill.PatternType = ExcelFillStyle.Solid;
+                    range.Style.Fill.BackgroundColor.SetColor(Color.LightGray);
+                    range.Style.Border.Bottom.Style = ExcelBorderStyle.Thin;
+                }
+
+                // Add data
+                int row = 2;
+                foreach (var detail in terminalDetails)
+                {
+                    worksheet.Cells[row, 1].Value = detail.SiteID;
+                    worksheet.Cells[row, 2].Value = detail.SiteName;
+                    worksheet.Cells[row, 3].Value = detail.StartDate;
+                    worksheet.Cells[row, 3].Style.Numberformat.Format = "mm/dd/yyyy";
+                    worksheet.Cells[row, 4].Value = detail.strGameDescription;
+                    worksheet.Cells[row, 5].Value = detail.Pool;
+                    worksheet.Cells[row, 6].Value = detail.Device;
+                    worksheet.Cells[row, 7].Value = detail.iDenom;
+                    worksheet.Cells[row, 7].Style.Numberformat.Format = "$#,##0.00";
+                    worksheet.Cells[row, 8].Value = detail.CashIn;
+                    worksheet.Cells[row, 8].Style.Numberformat.Format = "$#,##0.00";
+                    worksheet.Cells[row, 9].Value = detail.TicketIn;
+                    worksheet.Cells[row, 9].Style.Numberformat.Format = "$#,##0.00";
+                    worksheet.Cells[row, 10].Value = detail.TicketOut;
+                    worksheet.Cells[row, 10].Style.Numberformat.Format = "$#,##0.00";
+                    worksheet.Cells[row, 11].Value = detail.CanceledCredit;
+                    worksheet.Cells[row, 11].Style.Numberformat.Format = "$#,##0.00";
+                    worksheet.Cells[row, 12].Value = detail.HandPayWins;
+                    worksheet.Cells[row, 12].Style.Numberformat.Format = "$#,##0.00";
+                    worksheet.Cells[row, 13].Value = detail.TotalMoneyCashedOut;
+                    worksheet.Cells[row, 13].Style.Numberformat.Format = "$#,##0.00";
+                    worksheet.Cells[row, 14].Value = detail.GTBalance;
+                    worksheet.Cells[row, 14].Style.Numberformat.Format = "$#,##0.00";
+                    worksheet.Cells[row, 15].Value = detail.TotalMoneyIn;
+                    worksheet.Cells[row, 15].Style.Numberformat.Format = "$#,##0.00";
+                    worksheet.Cells[row, 16].Value = detail.TotalMoneyOut;
+                    worksheet.Cells[row, 16].Style.Numberformat.Format = "$#,##0.00";
+                    worksheet.Cells[row, 17].Value = detail.Balance;
+                    worksheet.Cells[row, 17].Style.Numberformat.Format = "$#,##0.00";
+                    worksheet.Cells[row, 18].Value = detail.Played;
+                    worksheet.Cells[row, 18].Style.Numberformat.Format = "$#,##0.00";
+                    worksheet.Cells[row, 19].Value = detail.TotalMoneyWon;
+                    worksheet.Cells[row, 19].Style.Numberformat.Format = "$#,##0.00";
+                    worksheet.Cells[row, 20].Value = detail.iNonCashIn;
+                    worksheet.Cells[row, 20].Style.Numberformat.Format = "$#,##0.00";
+                    worksheet.Cells[row, 21].Value = detail.iNonCashOut;
+                    worksheet.Cells[row, 21].Style.Numberformat.Format = "$#,##0.00";
+                    worksheet.Cells[row, 22].Value = detail.Hold;
+                    worksheet.Cells[row, 22].Style.Numberformat.Format = "$#,##0.00";
+                    worksheet.Cells[row, 23].Value = detail.Wagered;
+                    worksheet.Cells[row, 23].Style.Numberformat.Format = "$#,##0.00";
+                    worksheet.Cells[row, 24].Value = detail.TotalWon;
+                    worksheet.Cells[row, 24].Style.Numberformat.Format = "$#,##0.00";
+                    worksheet.Cells[row, 25].Value = detail.TotalCommission;
+                    worksheet.Cells[row, 25].Style.Numberformat.Format = "$#,##0.00";
+                    worksheet.Cells[row, 26].Value = detail.TerminalCommission;
+                    worksheet.Cells[row, 26].Style.Numberformat.Format = "$#,##0.00";
+                    worksheet.Cells[row, 27].Value = detail.AssetNumber;
+                    row++;
+                }
+
+                // Auto-fit columns
+                worksheet.Cells[worksheet.Dimension.Address].AutoFitColumns();
+
+                // Convert to byte array
+                var fileBytes = package.GetAsByteArray();
+
+                // Create filename with date
+                var fileName = $"TerminalDetails_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+
+                // Use JavaScript to trigger download
+                await JSRuntime.InvokeVoidAsync("downloadFile", fileName, Convert.ToBase64String(fileBytes));
+                
+                // Show success message briefly
+                errorMessage = null;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error exporting to Excel");
+            errorMessage = "Error exporting to Excel: " + ex.Message;
+        }
+        finally
+        {
+            exportingToExcel = false;
+            StateHasChanged();
+        }
+    }
+
+    void IDisposable.Dispose()
+    {
+        _cancellationTokenSource?.Dispose();
+        StopTimer();
+    }
+}

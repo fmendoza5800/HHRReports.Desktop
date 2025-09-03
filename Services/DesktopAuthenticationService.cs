@@ -6,6 +6,12 @@ using Microsoft.Extensions.Configuration;
 
 namespace HHRReports.Desktop.Services
 {
+    // Alias for cloud compatibility
+    public interface IAuthenticationService : IDesktopAuthenticationService
+    {
+        // Add additional methods if needed for compatibility
+    }
+
     public interface IDesktopAuthenticationService
     {
         Task<bool> LoginAsync(string username, string password, string server, string database);
@@ -17,7 +23,7 @@ namespace HHRReports.Desktop.Services
         string GetConnectionString();
     }
 
-    public class DesktopAuthenticationService : IDesktopAuthenticationService
+    public class DesktopAuthenticationService : IDesktopAuthenticationService, IAuthenticationService
     {
         private readonly ILogger<DesktopAuthenticationService> _logger;
         private readonly IConfiguration _configuration;

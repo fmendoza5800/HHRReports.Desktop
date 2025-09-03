@@ -8,6 +8,7 @@ namespace HHRReports.Desktop.Services
     public interface ITerminalDetailService
     {
         Task<List<TerminalDetail>> GetTerminalDetailsAsync(DateTime endDate, CancellationToken cancellationToken = default);
+        Task<List<TerminalDetail>> GetTerminalDetailsAsync(DateTime endDate, string? authToken, CancellationToken cancellationToken = default);
     }
 
     public class TerminalDetailService : ITerminalDetailService
@@ -24,6 +25,12 @@ namespace HHRReports.Desktop.Services
         }
 
         public async Task<List<TerminalDetail>> GetTerminalDetailsAsync(DateTime endDate, CancellationToken cancellationToken = default)
+        {
+            // Call the overloaded method with null authToken
+            return await GetTerminalDetailsAsync(endDate, null, cancellationToken);
+        }
+
+        public async Task<List<TerminalDetail>> GetTerminalDetailsAsync(DateTime endDate, string? authToken, CancellationToken cancellationToken = default)
         {
             try
             {

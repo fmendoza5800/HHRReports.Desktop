@@ -1,0 +1,48 @@
+@page "/logout"
+@using HHRReports.Desktop.Services
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+@inject IAuthenticationService AuthService
+@* Desktop version doesn't use HttpContext *@
+
+<PageTitle>Logging out...</PageTitle>
+
+<div class="container-fluid vh-100 d-flex align-items-center justify-content-center">
+    <div class="text-center">
+        <h3>Logging out...</h3>
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+</div>
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                // Desktop version - simple logout without HttpContext
+                AuthService.Logout();
+                
+                // Delete the auth cookie (if used)
+                try 
+                {
+                    await JSRuntime.InvokeVoidAsync("authHelpers.deleteCookie", "AuthToken");
+                }
+                catch 
+                {
+                    // Ignore if cookie doesn't exist
+                }
+            }
+            catch
+            {
+                // Cookie might not exist or JS might fail
+            }
+            
+            // Redirect to login with force load to ensure clean state
+            Navigation.NavigateTo("/login", forceLoad: true);
+        }
+    }
+}

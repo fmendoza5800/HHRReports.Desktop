@@ -8,6 +8,7 @@ namespace HHRReports.Desktop.Services
     public interface IPoolDetailService
     {
         Task<List<PoolDetail>> GetPoolDetailsAsync(DateTime startDate, CancellationToken cancellationToken = default);
+        Task<List<PoolDetail>> GetPoolDetailsAsync(DateTime startDate, string? authToken, CancellationToken cancellationToken = default);
     }
 
     public class PoolDetailService : IPoolDetailService
@@ -24,6 +25,12 @@ namespace HHRReports.Desktop.Services
         }
 
         public async Task<List<PoolDetail>> GetPoolDetailsAsync(DateTime startDate, CancellationToken cancellationToken = default)
+        {
+            // Call the overloaded method with null authToken
+            return await GetPoolDetailsAsync(startDate, null, cancellationToken);
+        }
+
+        public async Task<List<PoolDetail>> GetPoolDetailsAsync(DateTime startDate, string? authToken, CancellationToken cancellationToken = default)
         {
             try
             {

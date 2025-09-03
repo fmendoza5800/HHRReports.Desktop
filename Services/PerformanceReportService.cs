@@ -8,6 +8,8 @@ namespace HHRReports.Desktop.Services
     public interface IPerformanceReportService
     {
         Task<List<PerformanceReport>> GetPerformanceReportAsync(DateTime endDate, CancellationToken cancellationToken = default);
+        Task<List<PerformanceReport>> GetPerformanceReportsAsync(DateTime endDate, string? authToken, CancellationToken cancellationToken = default);
+        Task<List<PerformanceReport>> GetPerformanceReportsAsync(DateTime endDate, CancellationToken cancellationToken = default);
     }
 
     public class PerformanceReportService : IPerformanceReportService
@@ -61,6 +63,17 @@ namespace HHRReports.Desktop.Services
                     endDate, ex.Message);
                 throw;
             }
+        }
+
+        public async Task<List<PerformanceReport>> GetPerformanceReportsAsync(DateTime endDate, CancellationToken cancellationToken = default)
+        {
+            return await GetPerformanceReportsAsync(endDate, null, cancellationToken);
+        }
+
+        public async Task<List<PerformanceReport>> GetPerformanceReportsAsync(DateTime endDate, string? authToken, CancellationToken cancellationToken = default)
+        {
+            // For desktop version, auth token is ignored and we use the existing method
+            return await GetPerformanceReportAsync(endDate, cancellationToken);
         }
     }
 }

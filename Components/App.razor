@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
+    <link rel="stylesheet" href="bootstrap/bootstrap.min.css" />
+    <link rel="stylesheet" href="app.css" />
+    <link rel="stylesheet" href="HHRReports.Desktop.styles.css" />
+    <link rel="stylesheet" href="css/theme-overrides.css" />
+    <link rel="stylesheet" href="css/login.css" />
+    <link rel="stylesheet" href="css/sidebar-toggle.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <HeadOutlet />
+</head>
+
+<body>
+    <Routes />
+    <script src="_framework/blazor.web.js"></script>
+    <script src="js/tableResizer.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        window.downloadFile = function (fileName, base64Data) {
+            const linkSource = `data:application/octet-stream;base64,${base64Data}`;
+            const downloadLink = document.createElement("a");
+            downloadLink.href = linkSource;
+            downloadLink.download = fileName;
+            downloadLink.click();
+        }
+        
+        window.applyTheme = function(theme) {
+            document.body.className = '';
+            document.body.classList.add('theme-' + theme);
+            
+            // Apply theme to the entire page and all major containers
+            const elements = document.querySelectorAll('body, main, .sidebar, .top-row, article');
+            
+            elements.forEach(el => {
+                el.classList.remove('theme-white', 'theme-grey', 'theme-black');
+                el.classList.add('theme-' + theme);
+            });
+            
+            // Apply theme colors
+            if (theme === 'white') {
+                document.body.style.backgroundColor = '#ffffff';
+                document.body.style.color = '#212529';
+                document.documentElement.style.setProperty('--bs-body-bg', '#ffffff');
+                document.documentElement.style.setProperty('--bs-body-color', '#212529');
+            } else if (theme === 'grey') {
+                document.body.style.backgroundColor = '#868e96';
+                document.body.style.color = '#ffffff';
+                document.documentElement.style.setProperty('--bs-body-bg', '#868e96');
+                document.documentElement.style.setProperty('--bs-body-color', '#ffffff');
+            } else if (theme === 'black') {
+                document.body.style.backgroundColor = '#000000';
+                document.body.style.color = '#ffffff';
+                document.documentElement.style.setProperty('--bs-body-bg', '#000000');
+                document.documentElement.style.setProperty('--bs-body-color', '#ffffff');
+            }
+        }
+    </script>
+    <script src="js/sidebar.js"></script>
+</body>
+
+</html>
