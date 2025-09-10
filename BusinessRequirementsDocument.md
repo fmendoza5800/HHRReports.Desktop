@@ -629,6 +629,7 @@ Report shall include:
 | 1.0 | December 2024 | Project Team | Initial version |
 | 1.1 | September 2025 | Project Team | Added Performance Report and execution timer features |
 | 1.2 | September 2025 | Project Team | Added Terminal Details Excel export, fixed percentage formatting, enhanced error handling |
+| 1.3 | September 2025 | Project Team | Desktop and Cloud version synchronization - achieved full UI/UX parity between deployment models |
 
 ---
 

@@ -118,4 +118,36 @@ Services are registered in `Program.cs` using dependency injection:
 - **ADO.NET**: Used for Terminal Details service to safely handle missing or optional database columns
 - **Excel Export**: Uses EPPlus with proper formatting (currency, dates, percentages) and auto-fit columns
 - **Percentage Formatting**: Use ToString("N2")% format instead of ToString("P2") to avoid multiplication by 100
-- remember that we have 2 version of this report. cloud and destop. they should look the same and function the same.
+
+## Important Version Parity Notes
+
+### Desktop and Cloud Synchronization
+Both the **HHRReports.Cloud** and **HHRReports.Desktop** versions are maintained to have **identical functionality and appearance**. The following parity has been established:
+
+#### UI/UX Parity
+- **Login Page**: Professional card layout with only username/password fields visible (server/database use hidden defaults)
+- **Navigation**: Automatic redirect to login if not authenticated, then to Pool Details after login
+- **Components**: All Blazor pages (PoolDetails, TerminalDetails, PerformanceReport) identical between versions
+- **Styling**: Same CSS files, Bootstrap 5 theme, Font Awesome icons, and responsive layouts
+- **Themes**: White, Grey, Black theme support with identical visual appearance
+
+#### Service Layer Parity
+- **Authentication**: Desktop uses IAuthenticationService interface alias for cloud component compatibility
+- **Service Interfaces**: All service contracts identical (IPoolDetailService, ITerminalDetailService, IPerformanceReportService)
+- **Data Models**: Identical POCOs with only namespace differences (HHRReports vs HHRReports.Desktop)
+
+#### Key Architectural Differences (By Design)
+| Feature | Cloud Version | Desktop Version |
+|---------|---------------|-----------------|
+| **Framework** | ASP.NET Core 8.0 Blazor Server | .NET MAUI 8.0 Blazor Hybrid |
+| **Render Mode** | `@rendermode InteractiveServer` | Not used (MAUI native) |
+| **HTTP Context** | Uses IHttpContextAccessor | Not available in MAUI |
+| **DI Registration** | Scoped services | Singleton services |
+| **Entry Point** | Program.cs | MauiProgram.cs |
+| **HTML Host** | App.razor | wwwroot/index.html |
+
+#### Maintenance Guidelines
+- When updating one version, ensure corresponding changes are made to the other
+- Test both versions after making UI or functionality changes
+- Keep authentication flow consistent (login → Pool Details)
+- Maintain identical user experience across both deployment models
