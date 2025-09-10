@@ -54,20 +54,18 @@
                         <span>Cancel</span>
                     </button>
                 }
-                @if (terminalDetails != null && terminalDetails.Any() && !loading)
-                {
-                    <button class="btn btn-success" @onclick="ExportToExcel" disabled="@exportingToExcel">
-                        @if (exportingToExcel)
-                        {
-                            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                            <span class="ms-2">Exporting...</span>
-                        }
-                        else
-                        {
-                            <span>Export to Excel</span>
-                        }
-                    </button>
-                }
+                <button class="btn btn-success" @onclick="ExportToExcel" disabled="@exportingToExcel"
+                        style="@((terminalDetails != null && terminalDetails.Any() && !loading) ? "" : "visibility: hidden;")">
+                    @if (exportingToExcel)
+                    {
+                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                        <span class="ms-2">Exporting...</span>
+                    }
+                    else
+                    {
+                        <span>Export to Excel</span>
+                    }
+                </button>
             </div>
         </div>
         <div class="col">
