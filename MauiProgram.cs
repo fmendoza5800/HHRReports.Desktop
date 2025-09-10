@@ -41,7 +41,11 @@ public static class MauiProgram
         builder.Logging.SetMinimumLevel(LogLevel.Information);
 
         // Register authentication service as singleton for desktop
-        builder.Services.AddSingleton<IDesktopAuthenticationService, DesktopAuthenticationService>();
+        builder.Services.AddSingleton<DesktopAuthenticationService>();
+        builder.Services.AddSingleton<IDesktopAuthenticationService>(provider => 
+            provider.GetRequiredService<DesktopAuthenticationService>());
+        builder.Services.AddSingleton<IAuthenticationService>(provider => 
+            provider.GetRequiredService<DesktopAuthenticationService>());
         
         // Register DbContext factory
         builder.Services.AddSingleton<IDesktopDbContextFactory, DesktopDbContextFactory>();
