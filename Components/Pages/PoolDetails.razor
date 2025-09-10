@@ -35,26 +35,26 @@
             <input type="date" class="form-control" id="startDate" @bind="startDate" style="width: auto;">
         </div>
         <div class="col-auto">
-            <div class="btn-group">
-                <button class="btn btn-primary" @onclick="LoadReport" disabled="@loading">
-                    @if (loading)
-                    {
-                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                        <span class="ms-2">Loading...</span>
-                    }
-                    else
-                    {
-                        <span>Generate Report</span>
-                    }
-                </button>
+            <button class="btn btn-primary" @onclick="LoadReport" disabled="@loading">
                 @if (loading)
                 {
-                    <button class="btn btn-danger" @onclick="CancelLoad">
-                        <span>Cancel</span>
-                    </button>
+                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                    <span class="ms-2">Loading...</span>
                 }
-                <button class="btn btn-success" @onclick="ExportToExcel" disabled="@exportingToExcel" 
-                        style="@((poolDetails != null && poolDetails.Any() && !loading) ? "" : "visibility: hidden;")">
+                else
+                {
+                    <span>Generate Report</span>
+                }
+            </button>
+            @if (loading)
+            {
+                <button class="btn btn-danger ms-2" @onclick="CancelLoad">
+                    <span>Cancel</span>
+                </button>
+            }
+            @if (poolDetails != null && poolDetails.Any() && !loading)
+            {
+                <button class="btn btn-success ms-2" @onclick="ExportToExcel" disabled="@exportingToExcel">
                     @if (exportingToExcel)
                     {
                         <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
@@ -65,7 +65,7 @@
                         <span>Export to Excel</span>
                     }
                 </button>
-            </div>
+            }
         </div>
         <div class="col">
             @if (poolDetails != null && poolDetails.Any())
